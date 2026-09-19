@@ -390,3 +390,7 @@ Access the website: https://app.saveetha.in
 Website: https://app.saveetha.in
 
 Happy shopping and selling on FlipIQ!
+
+## Project Maintenance
+
+FlipIQ is maintained and updated as part of my software development portfolio.
