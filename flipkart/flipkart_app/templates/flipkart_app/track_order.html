@@ -1,0 +1,134 @@
+{% extends 'flipkart_app/base.html' %}
+
+{% block title %}Track Order #{{ order.id }} - FlipVision{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeline-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        position: relative;
+    }
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #e5e7eb;
+        z-index: -1;
+    }
+    .timeline-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+    .timeline-step-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.25rem;
+        color: #6b7280;
+        z-index: 1;
+    }
+    .timeline-step.active .timeline-step-icon {
+        background: #3b82f6;
+        color: white;
+    }
+    .timeline-step.completed .timeline-step-icon {
+        background: #10b981;
+        color: white;
+    }
+    .timeline-step-label {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        color: #4b5563;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-8 px-4">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="p-6">
+            <h1 class="text-3xl font-bold mb-6 text-gray-800">Track Order #{{ order.id }}</h1>
+            
+            <div class="mb-6">
+                <p class="text-lg text-gray-600">Current Status: <span class="font-semibold text-blue-600">{{ order.status|title }}</span></p>
+                <p class="text-sm text-gray-500">Last Updated: {{ order.updated_at|date:"F d, Y at H:i" }}</p>
+            </div>
+
+            <div class="timeline-container">
+                <div class="timeline-step {% if order.status == 'placed' %}active{% elif order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="timeline-step-icon">📦</div>
+                    <div class="timeline-step-label">Placed</div>
+                </div>
+                <div class="timeline-step {% if order.status == 'processing' %}active{% elif order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="timeline-step-icon">🔧</div>
+                    <div class="timeline-step-label">Processing</div>
+                </div>
+                <div class="timeline-step {% if order.status == 'shipped' %}active{% elif order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="timeline-step-icon">🚚</div>
+                    <div class="timeline-step-label">Shipped</div>
+                </div>
+                <div class="timeline-step {% if order.status == 'out_for_delivery' %}active{% elif order.status == 'delivered' %}completed{% endif %}">
+                    <div class="timeline-step-icon">🏃</div>
+                    <div class="timeline-step-label">Out for Delivery</div>
+                </div>
+                <div class="timeline-step {% if order.status == 'delivered' %}active{% endif %}">
+                    <div class="timeline-step-icon">✅</div>
+                    <div class="timeline-step-label">Delivered</div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gray-50 p-4 rounded-md">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Order Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Order Date: <span class="font-medium text-gray-800">{{ order.created_at|date:"F d, Y" }}</span></p>
+                        <p class="text-sm text-gray-600">Total Amount: <span class="font-medium text-gray-800">₹{{ order.total_amount }}</span></p>
+                        <p class="text-sm text-gray-600">Payment Method: <span class="font-medium text-gray-800">{{ order.payment_method|default:"Not specified" }}</span></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Shipping Address:</p>
+                        <p class="text-sm font-medium text-gray-800">
+                            {{ order.shipping_address.street }},<br>
+                            {{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.zip_code }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {% if order.status != 'delivered' %}
+                <div class="mt-8">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">Estimated Delivery</h2>
+                    <p class="text-lg text-gray-600">
+                        {% if order.estimated_delivery %}
+                            Your order is expected to be delivered by <span class="font-semibold text-blue-600">{{ order.estimated_delivery|date:"F d, Y" }}</span>.
+                        {% else %}
+                            Estimated delivery date will be available once your order is shipped.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+
+            <div class="mt-8">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Need Help?</h2>
+                <p class="text-gray-600">If you have any questions about your order, please contact our customer support:</p>
+                <p class="mt-2">
+                    <a href="mailto:support@FlipVision.com" class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out">support@FlipVision.com</a>
+                    or call us at <span class="font-medium">1-800-</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

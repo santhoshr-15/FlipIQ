@@ -1,0 +1,294 @@
+{% extends 'flipkart_app/base.html' %}
+
+{% block title %}{{ product.name }} - FreshMart{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        margin-bottom: 4rem;
+        background-color: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+    }
+    
+    .product-image-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .product-image-container:hover .product-image {
+        transform: scale(1.1);
+    }
+    
+    .freshness-indicator {
+        display: inline-flex;
+        align-items: center;
+        background-color: #e8f5e9;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        margin: 1rem 0;
+        transition: all 0.3s ease;
+    }
+    
+    .freshness-indicator:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .freshness-indicator i {
+        color: #28a745;
+        margin-right: 0.5rem;
+    }
+    
+    .product-meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+    
+    .meta-item {
+        text-align: center;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .meta-item:hover {
+        background-color: #e9ecef;
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .meta-item i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #007bff;
+    }
+    
+    .product-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .product-actions button {
+        flex: 1;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        border-radius: 25px;
+    }
+    
+    .product-actions button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .similar-products {
+        margin-top: 4rem;
+    }
+    
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 2rem;
+    }
+    
+    .product-card {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .product-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .product-card-content {
+        padding: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .product-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="product-container">
+        <div class="product-image-container">
+            <img src="{{ product.image.url|default:'/static/images/placeholder.jpg' }}" alt="{{ product.name }}" class="product-image">
+        </div>
+        
+        <div class="product-info">
+            <h1 class="display-4 mb-3">{{ product.name }}</h1>
+            <div class="freshness-indicator">
+                <i class="fas fa-leaf fa-lg"></i>
+                <span class="font-weight-bold">{{ product.freshness_score }}% Fresh</span>
+            </div>
+            
+            <div class="product-meta">
+                <div class="meta-item">
+                    <i class="fas fa-tag"></i>
+                    <h3 class="h5 mt-2">Brand</h3>
+                    <p class="mb-0">{{ product.brand }}</p>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3 class="h5 mt-2">Expiry Date</h3>
+                    <p class="mb-0">{{ product.expiry_date|date:"Y-m-d" }}</p>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-store"></i>
+                    <h3 class="h5 mt-2">Seller</h3>
+                    <p class="mb-0">{{ product.seller.company_name }}</p>
+                </div>
+            </div>
+            
+            <p class="product-description lead">{{ product.description }}</p>
+            
+            <div class="product-actions">
+                <button id="addToCartBtn" class="btn btn-primary btn-lg" onclick="addToCart({{ product.id }})">
+                    <i class="fas fa-cart-plus mr-2"></i> Add to Cart
+                </button>
+                <button id="addToWishlistBtn" class="btn btn-outline-secondary btn-lg" onclick="addToWishlist({{ product.id }})">
+                    <i class="far fa-heart mr-2"></i> Add to Wishlist
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="similar-products">
+        <h2 class="display-5 mb-4">Similar Products</h2>
+        <div class="product-grid">
+            {% for similar_product in similar_products %}
+                <div class="product-card">
+                    <img src="{{ similar_product.image.url|default:'/static/images/placeholder.jpg' }}" alt="{{ similar_product.name }}">
+                    <div class="product-card-content">
+                        <h3 class="h5">{{ similar_product.name }}</h3>
+                        <p class="mb-2">{{ similar_product.brand }}</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="quickView({{ similar_product.id }})">Quick View</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" role="dialog" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickViewModalLabel">Product Quick View</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="quickViewContent">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addToCart(productId) {
+    const button = document.getElementById('addToCartBtn');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Adding...';
+
+    // Simulating an API call
+    setTimeout(() => {
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+        button.innerHTML = '<i class="fas fa-check mr-2"></i> Added to Cart';
+        
+        setTimeout(() => {
+            button.classList.remove('btn-success');
+            button.classList.add('btn-primary');
+            button.innerHTML = '<i class="fas fa-cart-plus mr-2"></i> Add to Cart';
+            button.disabled = false;
+        }, 2000);
+    }, 1000);
+}
+
+function addToWishlist(productId) {
+    const button = document.getElementById('addToWishlistBtn');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Adding...';
+
+    // Simulating an API call
+    setTimeout(() => {
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-danger');
+        button.innerHTML = '<i class="fas fa-heart mr-2"></i> Added to Wishlist';
+        
+        setTimeout(() => {
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-outline-secondary');
+            button.innerHTML = '<i class="far fa-heart mr-2"></i> Add to Wishlist';
+            button.disabled = false;
+        }, 2000);
+    }, 1000);
+}
+
+function quickView(productId) {
+    // Simulating an API call to fetch product details
+    const mockProductData = {
+        name: 'Sample Product',
+        brand: 'Sample Brand',
+        description: 'This is a sample product description.',
+        price: '$19.99',
+        image: '/static/images/placeholder.jpg'
+    };
+
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <img src="${mockProductData.image}" alt="${mockProductData.name}" class="img-fluid">
+            </div>
+            <div class="col-md-6">
+                <h2>${mockProductData.name}</h2>
+                <p><strong>Brand:</strong> ${mockProductData.brand}</p>
+                <p><strong>Price:</strong> ${mockProductData.price}</p>
+                <p>${mockProductData.description}</p>
+                <button class="btn btn-primary" onclick="addToCart(${productId})">Add to Cart</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('quickViewContent').innerHTML = content;
+    $('#quickViewModal').modal('show');
+}
+</script>
+{% endblock %}

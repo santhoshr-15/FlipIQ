@@ -1,0 +1,322 @@
+{% extends 'flipkart_app/base2.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="product-form-card card shadow-2xl border-0 rounded-2xl overflow-hidden transform transition-all duration-500 hover:scale-[1.02]">
+                <div class="card-header bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-center py-5 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-pattern opacity-20"></div>
+                    <h2 class="mb-0 relative z-10 text-3xl font-bold tracking-wider">
+                        <i class="fas fa-plus-circle mr-3 animate-pulse"></i>Add New Product
+                    </h2>
+                </div>
+                <div class="card-body px-6 py-8 relative">
+                    <!-- Decorative background shapes -->
+                    <div class="absolute top-0 right-0 w-48 h-48 bg-indigo-100 rounded-full opacity-50 transform -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
+                    <div class="absolute bottom-0 left-0 w-36 h-36 bg-purple-100 rounded-full opacity-50 transform translate-x-1/2 translate-y-1/2 blur-2xl"></div>
+
+                    {% if messages %}
+                        <div class="message-container mb-6">
+                            {% for message in messages %}
+                                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show alert-animated" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data" class="product-form" id="productForm">
+                        {% csrf_token %}
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-600">Product Name</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-tag input-icon"></i>
+                                    <input type="text" class="form-input" id="name" name="name" placeholder="Enter product name" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="category" class="block mb-2 text-sm font-medium text-gray-600">Category</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-list input-icon"></i>
+                                    <select class="form-input" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="description" class="block mb-2 text-sm font-medium text-gray-600">Description</label>
+                            <textarea class="form-input resize-none" id="description" name="description" rows="3" placeholder="Enter product description" required></textarea>
+                        </div>
+
+                        <div class="grid md:grid-cols-3 gap-6 mt-4">
+                            <div class="form-group">
+                                <label for="price" class="block mb-2 text-sm font-medium text-gray-600">Price</label>
+                                <div class="input-wrapper">
+                                    <span class="currency-symbol">₹</span>
+                                    <input type="number" step="0.01" class="form-input pl-8" id="price" name="price" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="stock" class="block mb-2 text-sm font-medium text-gray-600">Stock Quantity</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-box input-icon"></i>
+                                    <input type="number" class="form-input" id="stock" name="stock" placeholder="Enter stock" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="discount_percentage" class="block mb-2 text-sm font-medium text-gray-600">Discount %</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-percent input-icon"></i>
+                                    <input type="number" class="form-input" id="discount_percentage" name="discount_percentage" min="0" max="100" placeholder="Optional">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="image" class="block mb-2 text-sm font-medium text-gray-600">Product Image</label>
+                            <div class="image-upload-container">
+                                <input type="file" class="hidden-file-input" id="image" name="image" accept="image/*" required>
+                                <label for="image" class="image-upload-label">
+                                    <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                    <span class="file-name">Choose image</span>
+                                </label>
+                                <div class="image-preview mt-2 hidden">
+                                    <img src="" alt="Image Preview" class="max-w-full h-auto rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" class="form-checkbox text-indigo-600" id="is_featured" name="is_featured">
+                                <span class="ml-2 text-gray-700">Mark as Featured Product</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group text-center mt-6">
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-save mr-2"></i>Add Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Global Styles */
+    body {
+        background: linear-gradient(135deg, #f6f8fc 0%, #eef1f5 100%);
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Card Styles */
+    .product-form-card {
+        background: white;
+        border-top: 4px solid #6366f1;
+        transition: all 0.5s ease;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+        position: relative;
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
+    }
+
+    .bg-pattern {
+        background-image: 
+            linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, 
+            rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+        background-size: 40px 40px;
+    }
+
+    /* Form Styles */
+    .form-group {
+        position: relative;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6366f1;
+        opacity: 0.6;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 12px 12px 40px;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+    }
+
+    .form-input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        background-color: white;
+    }
+
+    .currency-symbol {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6366f1;
+        opacity: 0.6;
+    }
+
+    .form-input.pl-8 {
+        padding-left: 32px;
+    }
+
+    /* Image Upload Styles */
+    .image-upload-container {
+        border: 2px dashed #6366f1;
+        border-radius: 0.75rem;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .image-upload-label {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #f0f5ff;
+        color: #6366f1;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .image-upload-label:hover {
+        background-color: #e6edff;
+    }
+
+    .image-preview img {
+        max-height: 200px;
+        object-fit: cover;
+    }
+
+    /* Submit Button */
+    .submit-btn {
+        padding: 12px 40px;
+        background: linear-gradient(to right, #6366f1, #a855f7);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        transition: all 0.4s ease;
+        transform: perspective(500px) rotateX(0deg);
+    }
+
+    .submit-btn:hover {
+        transform: perspective(500px) rotateX(-5deg) scale(1.05);
+        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .submit-btn:active {
+        transform: perspective(500px) rotateX(5deg) scale(0.95);
+    }
+
+    /* Alert Animations */
+    @keyframes slideIn {
+        from { 
+            opacity: 0; 
+            transform: translateY(-20px);
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0);
+        }
+    }
+
+    .alert-animated {
+        animation: slideIn 0.5s ease-out;
+    }
+
+    /* Checkbox Styles */
+    .form-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 0.25rem;
+        border-color: #6366f1;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .product-form-card {
+            margin: 20px;
+        }
+    }
+</style>
+
+<script>
+    // Custom file input functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('image');
+        const fileNameSpan = document.querySelector('.file-name');
+        const imagePreviewContainer = document.querySelector('.image-preview');
+        const imagePreview = imagePreviewContainer.querySelector('img');
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                // Update file name
+                fileNameSpan.textContent = file.name;
+
+                // Show image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                fileNameSpan.textContent = 'Choose image';
+                imagePreviewContainer.classList.add('hidden');
+            }
+        });
+
+        // Form validation with dynamic feedback
+        const form = document.getElementById('productForm');
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    input.classList.remove('border-red-500');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill out all required fields.');
+            }
+        });
+    });
+</script>
+{% endblock %}

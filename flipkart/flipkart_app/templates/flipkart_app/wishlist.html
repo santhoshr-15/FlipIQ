@@ -1,0 +1,126 @@
+{% extends 'flipkart_app/base.html' %}
+
+{% block title %}My Wishlist - FlipVision{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen py-12">
+    <div class="container mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">My Wishlist</h1>
+
+        {% if wishlist_items %}
+            <!-- Continue Shopping Button -->
+            <div class="mb-8 text-left">
+                <a href="{% url 'product_list' %}" class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition duration-300 shadow-md">
+                    <i class="fas fa-arrow-left mr-2"></i> Continue Shopping
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {% for item in wishlist_items %}
+                <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 wishlist-item overflow-hidden" id="wishlist-item-{{ item.product.id }}">
+                    <div class="relative">
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-full h-64 object-cover">
+                        {% if item.product.discount_percentage > 0 %}
+                        <div class="absolute top-0 right-0 bg-green-500 text-white px-3 py-1 rounded-bl-lg">
+                            {{ item.product.discount_percentage }}% OFF
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold mb-2 text-gray-800">{{ item.product.name }}</h2>
+                        <p class="text-gray-600 mb-4">{{ item.product.description|truncatewords:20 }}</p>
+
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-2xl font-bold text-indigo-600">₹{{ item.product.discounted_price }}</span>
+                            {% if item.product.discount_percentage > 0 %}
+                            <span class="text-sm text-gray-500 line-through">₹{{ item.product.price }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex space-x-3">
+                            <a href="{% url 'add_to_cart' item.product.id %}" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-300 text-center">
+                                <i class="fas fa-cart-plus mr-2"></i> Add to Cart
+                            </a>
+
+                            <button class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition duration-300 remove-wishlist" data-product-id="{{ item.product.id }}">
+                                <i class="fas fa-trash-alt mr-2"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-2xl mx-auto">
+                <i class="fas fa-heart-broken text-6xl text-gray-300 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your wishlist is currently empty</h2>
+                <p class="text-gray-600 mb-6">Browse our products and add your favorites to your wishlist!</p>
+                <a href="{% url 'product_list' %}" class="inline-block bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition duration-300 shadow-md">
+                    <i class="fas fa-shopping-bag mr-2"></i> Start Shopping
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript to handle remove from wishlist without page reload -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const removeButtons = document.querySelectorAll('.remove-wishlist');
+
+        removeButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                const productId = this.getAttribute('data-product-id');
+                const wishlistItem = document.getElementById(`wishlist-item-${productId}`);
+
+                // Send the AJAX request
+                fetch(`/remove-from-wishlist/${productId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        // Animate the removal of the item
+                        wishlistItem.style.transition = 'all 0.5s ease-out';
+                        wishlistItem.style.transform = 'scale(0.8)';
+                        wishlistItem.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            wishlistItem.remove();
+                            // Check if the wishlist is now empty
+                            if (document.querySelectorAll('.wishlist-item').length === 0) {
+                                location.reload(); // Reload to show the empty wishlist message
+                            }
+                        }, 500);
+
+                        // Show a toast notification
+                        showToast('Item removed from wishlist');
+                    } else {
+                        showToast('Error removing the item from the wishlist', 'error');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error processing your request', 'error');
+                });
+            });
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg transition-opacity duration-300`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}

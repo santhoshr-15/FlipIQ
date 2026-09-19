@@ -1,0 +1,373 @@
+{% extends 'flipkart_app/base2.html' %}
+
+{% block title %}Detect Items{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+            <h1 class="text-3xl font-extrabold text-white text-center tracking-wide">
+                Detect Items
+            </h1>
+        </div>
+
+        <div class="p-6">
+            <!-- Camera Selection Dropdown -->
+            <div class="mb-4" id="cameraSelectionContainer">
+                <label for="cameraSelect" class="block text-gray-700 font-bold mb-2">
+                    Select Camera:
+                </label>
+                <select 
+                    id="cameraSelect" 
+                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    <!-- Camera options will be populated dynamically -->
+                </select>
+            </div>
+
+            <!-- Camera Access Section -->
+            <div class="text-center mt-6">
+                <button 
+                    id="captureButton" 
+                    class="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105">
+                    Access Camera
+                </button>
+            </div>
+            <div id="cameraPreview" class="mt-6 hidden">
+                <video 
+                    id="video" 
+                    autoplay 
+                    class="w-full rounded-lg shadow-md"
+                ></video>
+                <div class="flex justify-center space-x-4 mt-4">
+                    <button 
+                        id="snapButton" 
+                        class="px-6 py-3 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700">
+                        Capture Photo
+                    </button>
+                    <button 
+                        id="stopCameraButton" 
+                        class="px-6 py-3 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700">
+                        Stop Camera
+                    </button>
+                </div>
+                <canvas id="canvas" class="hidden"></canvas>
+            </div>
+
+            <!-- Image Upload Form -->
+            <form id="uploadForm" method="POST" enctype="multipart/form-data" class="space-y-6 mt-6">
+                {% csrf_token %}
+                <div class="bg-gray-50 border-2 border-dashed border-indigo-300 p-6 text-center transition-all duration-300 hover:border-indigo-500 hover:bg-indigo-50">
+                    <label for="imageInput" class="block mb-4 text-lg font-semibold text-gray-700">
+                        Upload an Image
+                    </label>
+                    <input 
+                        type="file" 
+                        id="imageInput" 
+                        name="image" 
+                        accept="image/*" 
+                        class="hidden" 
+                        required
+                    >
+                    <label 
+                        for="imageInput" 
+                        class="cursor-pointer inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition-colors duration-300"
+                    >
+                        Choose File
+                    </label>
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="w-full px-6 py-3 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-all duration-300 transform hover:scale-105"
+                >
+                    Detect Items
+                </button>
+            </form>
+
+            <!-- Image Preview Section -->
+            <div id="imagePreview" class="mt-6 hidden">
+                <h2 class="text-xl font-semibold mb-4 text-center text-gray-700">Image Preview</h2>
+                <div class="flex justify-center">
+                    <img 
+                        id="previewImg" 
+                        src="" 
+                        alt="Preview" 
+                        class="max-w-full max-h-80 rounded-lg shadow-md object-cover"
+                    >
+                </div>
+            </div>
+
+            <!-- Detection Results Section -->
+            <div id="detectionResults" class="mt-6">
+                <h2 class="text-xl font-semibold mb-4 text-center text-gray-700">
+                    Detection Results
+                </h2>
+                <ul 
+                    id="resultsList" 
+                    class="space-y-4 bg-gray-50 rounded-lg p-4 shadow-inner"
+                ></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const captureButton = document.getElementById("captureButton");
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const snapButton = document.getElementById("snapButton");
+        const stopCameraButton = document.getElementById("stopCameraButton");
+        const uploadForm = document.getElementById("uploadForm");
+        const imageInput = document.getElementById("imageInput");
+        const previewImg = document.getElementById("previewImg");
+        const imagePreview = document.getElementById("imagePreview");
+        const resultsList = document.getElementById("resultsList");
+        const cameraSelect = document.getElementById("cameraSelect");
+        const cameraSelectionContainer = document.getElementById("cameraSelectionContainer");
+        const cameraPreview = document.getElementById("cameraPreview");
+
+        let currentStream = null;
+
+        // Function to stop the current camera stream
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                currentStream = null;
+                cameraPreview.classList.add("hidden");
+            }
+        }
+
+        // Stop camera when button is clicked
+        stopCameraButton.addEventListener("click", stopCamera);
+
+        // List and populate cameras
+        function listCameras() {
+            // Ensure browser supports getUserMedia
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('Media devices not supported');
+                cameraSelect.innerHTML = '<option>Camera not supported</option>';
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(() => {
+                    return navigator.mediaDevices.enumerateDevices();
+                })
+                .then(devices => {
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    
+                    // Clear previous options
+                    cameraSelect.innerHTML = '';
+
+                    // Handle no cameras
+                    if (videoDevices.length === 0) {
+                        const option = document.createElement('option');
+                        option.text = 'No cameras found';
+                        option.disabled = true;
+                        cameraSelect.appendChild(option);
+                        return;
+                    }
+
+                    // Populate dropdown
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Camera ${index + 1}`;
+                        
+                        // Prioritize USB cameras
+                        if (device.label.toLowerCase().includes('usb')) {
+                            option.selected = true;
+                        }
+                        
+                        cameraSelect.appendChild(option);
+                    });
+
+                    // Always show camera selection
+                    cameraSelectionContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Camera listing error:', error);
+                    
+                    // Show error option
+                    cameraSelect.innerHTML = '';
+                    const option = document.createElement('option');
+                    option.text = 'Camera Access Denied';
+                    option.disabled = true;
+                    cameraSelect.appendChild(option);
+                    
+                    // Show error in results
+                    resultsList.innerHTML = `
+                        <li class="text-center text-red-600 bg-red-50 p-4 rounded-lg">
+                            Camera Error: ${error.message}. Please check permissions.
+                        </li>
+                    `;
+                });
+        }
+
+        // Start camera with selected device
+        function startCamera() {
+            // Stop any existing camera stream
+            stopCamera();
+
+            const constraints = {
+                video: {
+                    deviceId: cameraSelect.value ? 
+                        { exact: cameraSelect.value } : undefined
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then((stream) => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+                    video.classList.remove("hidden");
+                    cameraPreview.classList.remove("hidden");
+                })
+                .catch((error) => {
+                    console.error("Camera access error:", error);
+                    
+                    // Clear video and show error
+                    cameraPreview.classList.add("hidden");
+                    
+                    // Show error in results
+                    resultsList.innerHTML = `
+                        <li class="text-center text-red-600 bg-red-50 p-4 rounded-lg">
+                            Camera Error: ${error.message}. Please check permissions.
+                        </li>
+                    `;
+                });
+        }
+
+        // Capture button event
+        captureButton.addEventListener("click", () => {
+            listCameras();
+            setTimeout(startCamera, 500);  // Small delay to allow device listing
+        });
+
+        // Camera selection change
+        cameraSelect.addEventListener('change', startCamera);
+
+        // Snap button event
+        snapButton.addEventListener("click", () => {
+            const context = canvas.getContext("2d");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get base64 image data
+            const imageData = canvas.toDataURL("image/png");
+
+            // Set image preview
+            previewImg.src = imageData;
+            imagePreview.classList.remove("hidden");
+
+            // Create a file from base64 data
+            fetch(imageData)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], "captured_image.png", { type: "image/png" });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    imageInput.files = dataTransfer.files;
+                });
+        });
+
+        // Preview uploaded image
+        imageInput.addEventListener("change", function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove("hidden");
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle form submission
+        uploadForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            resultsList.innerHTML = `
+                <li class="text-center text-gray-600 animate-pulse">
+                    <svg class="animate-spin h-6 w-6 mx-auto text-indigo-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                </li>
+            `;
+
+            fetch("", {
+                method: "POST",
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                resultsList.innerHTML = "";
+                if (data.success) {
+                    if (data.items_info && data.items_info.length > 0) {
+                        data.items_info.forEach((item, index) => {
+                            const li = document.createElement("li");
+                            li.classList.add("bg-white", "p-4", "rounded-lg", "shadow", "border-l-4", "border-indigo-500", "animate-slide-in-right");
+                            li.style.animationDelay = `${index * 0.1}s`;
+                            li.innerHTML = `
+                                <div class="mb-2 font-bold text-indigo-600">Item ${index + 1}</div>
+                                <p><strong>Brandname:</strong> ${item.Brandname}</p>
+                                <p><strong>Product Type:</strong> ${item.Product_Type}</p>
+                                <p><strong>Flavour:</strong> ${item.Flavour}</p>
+                            `;
+                            resultsList.appendChild(li);
+                        });
+                    } else {
+                        resultsList.innerHTML = `
+                            <li class="text-center text-gray-600 bg-yellow-50 p-4 rounded-lg">
+                                No items detected. Try a different image?
+                            </li>
+                        `;
+                    }
+                } else {
+                    resultsList.innerHTML = `
+                        <li class="text-center text-red-600 bg-red-50 p-4 rounded-lg">
+                            Error: ${data.error || "An unknown error occurred."}
+                        </li>
+                    `;
+                }
+            })
+            .catch(error => {
+                resultsList.innerHTML = `
+                    <li class="text-center text-red-600 bg-red-50 p-4 rounded-lg">
+                        Error: ${error.message}
+                    </li>
+                `;
+            });
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopCamera);
+    });
+</script>
+
+<!-- Custom Animations -->
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    .animate-slide-in-right {
+        animation: slideInRight 0.5s ease-out;
+    }
+</style>
+{% endblock %}

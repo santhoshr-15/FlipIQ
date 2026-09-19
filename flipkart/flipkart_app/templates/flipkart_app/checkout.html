@@ -1,0 +1,103 @@
+{% extends 'flipkart_app/base.html' %}
+
+{% block title %}Checkout - FlipVision{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12 bg-gray-50">
+    <h1 class="text-4xl font-bold mb-10 text-center text-gray-800">Checkout</h1>
+
+    <div class="flex flex-col lg:flex-row gap-10">
+        <!-- Shipping Details and Payment -->
+        <div class="bg-white p-8 rounded-xl shadow-lg flex-1 transition-transform duration-300 hover:scale-102">
+            <h2 class="text-2xl font-semibold mb-6 text-indigo-600">Shipping & Payment Details</h2>
+            <form id="checkout-form" action="{% url 'checkout' %}" method="POST" class="space-y-6">
+                {% csrf_token %}
+                <div>
+                    <label for="shipping_address" class="block text-gray-700 font-medium mb-2">Shipping Address</label>
+                    <textarea id="shipping_address" name="shipping_address" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-300" required>{{ user.userprofile.address }}</textarea>
+                </div>
+
+                <div>
+                    <label for="phone_number" class="block text-gray-700 font-medium mb-2">Phone Number</label>
+                    <input type="tel" id="phone_number" name="phone_number" pattern="[0-9]{10}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-300" value="{{ user.userprofile.phone_number }}" required>
+                    <p class="text-sm text-gray-500 mt-1">Enter a valid 10-digit phone number</p>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="mt-10">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Payment Method</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition duration-300">
+                            <input type="radio" id="credit_card" name="payment_method" value="Credit Card" class="form-radio text-indigo-600" required>
+                            <span class="text-gray-700">Credit Card</span>
+                            <i class="fas fa-credit-card text-indigo-500 ml-auto"></i>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition duration-300">
+                            <input type="radio" id="paypal" name="payment_method" value="PayPal" class="form-radio text-indigo-600">
+                            <span class="text-gray-700">PayPal</span>
+                            <i class="fab fa-paypal text-indigo-500 ml-auto"></i>
+                        </label>
+                        <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition duration-300">
+                            <input type="radio" id="cod" name="payment_method" value="Cash on Delivery" class="form-radio text-indigo-600">
+                            <span class="text-gray-700">Cash on Delivery</span>
+                            <i class="fas fa-money-bill-wave text-indigo-500 ml-auto"></i>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Place Order Button -->
+                <div class="mt-10">
+                    <button type="submit" class="w-full bg-indigo-600 text-white px-6 py-4 rounded-xl text-lg font-semibold hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                        Place Order
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="bg-white p-8 rounded-xl shadow-lg lg:w-1/3">
+            <h2 class="text-2xl font-semibold mb-6 text-indigo-600">Order Summary</h2>
+            <ul class="space-y-6">
+                {% for item in cart.items.all %}
+                    <li class="flex items-center space-x-4 border-b border-gray-200 pb-4">
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="w-20 h-20 rounded-lg object-cover">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium text-gray-800">{{ item.product.name }}</h3>
+                            <p class="text-gray-600">Quantity: {{ item.quantity }}</p>
+                        </div>
+                        <p class="text-lg font-semibold text-indigo-600">₹{{ item.get_subtotal }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <div class="mt-8 space-y-4">
+                <div class="flex justify-between text-gray-700">
+                    <p>Subtotal</p>
+                    <p>₹{{ cart.get_total }}</p>
+                </div>
+                <div class="flex justify-between text-gray-700">
+                    <p>Shipping</p>
+                    <p class="text-green-600">Free</p>
+                </div>
+                <div class="flex justify-between text-xl font-semibold text-gray-800 border-t border-gray-200 pt-4">
+                    <p>Total</p>
+                    <p class="text-indigo-600">₹{{ cart.get_total }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Client-side Validation Script -->
+<script>
+    document.getElementById('checkout-form').addEventListener('submit', function(event) {
+        const phoneNumber = document.getElementById('phone_number').value;
+        const phonePattern = /^[0-9]{10}$/;
+
+        if (!phonePattern.test(phoneNumber)) {
+            event.preventDefault();
+            alert('Please enter a valid 10-digit phone number.');
+        }
+    });
+</script>
+{% endblock %}

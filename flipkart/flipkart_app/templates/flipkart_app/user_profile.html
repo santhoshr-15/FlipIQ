@@ -1,0 +1,172 @@
+{% extends 'flipkart_app/base.html' %}
+
+{% block title %}{{ user.username }}'s Profile - FlipVision{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-5xl mx-auto">
+            <!-- Profile Header -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                    <div class="w-32 h-32 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 p-1 shadow-lg">
+                        {% if user_profile.profile_picture %}
+                            <img src="{{ user_profile.profile_picture.url }}" alt="Profile Picture" class="w-full h-full rounded-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full rounded-full bg-white flex items-center justify-center">
+                                <i class="fas fa-user text-5xl text-gray-400"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h1 class="text-3xl font-bold text-gray-800">{{ user.get_full_name|default:user.username }}</h1>
+                        <p class="text-lg text-gray-600">
+                            {{ user_profile.user_type|title }} Account
+                            {% if user_profile.user_type == 'seller' and seller.is_verified %}
+                                <span class="ml-2 text-green-500"><i class="fas fa-check-circle"></i> Verified Seller</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-sm text-gray-500">Member since {{ user.date_joined|date:"F Y" }}</p>
+                    </div>
+                    <button class="ml-auto bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition duration-300 shadow-md">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Personal Information -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Personal Information</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-600 mb-1 text-sm">Full Name</label>
+                                <p class="font-medium text-gray-800">{{ user.get_full_name|default:"Not provided" }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 mb-1 text-sm">Email</label>
+                                <p class="font-medium text-gray-800">{{ user.email }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 mb-1 text-sm">Phone</label>
+                                <p class="font-medium text-gray-800">{{ user_profile.phone_number }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-600 mb-1 text-sm">Location</label>
+                                <p class="font-medium text-gray-800">{{ user_profile.city }}, {{ user_profile.state }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Address</h2>
+                        <p class="text-gray-800">{{ user_profile.address }}</p>
+                        <p class="text-gray-600 mt-2">{{ user_profile.city }}, {{ user_profile.state }} - {{ user_profile.pincode }}</p>
+                    </div>
+
+                    {% if user_profile.user_type == 'seller' %}
+                        <!-- Seller Information -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Seller Information</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-gray-600 mb-1 text-sm">Company Name</label>
+                                    <p class="font-medium text-gray-800">{{ seller.company_name }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-600 mb-1 text-sm">GST Number</label>
+                                    <p class="font-medium text-gray-800">{{ seller.gst_number }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Your Products -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-semibold text-gray-800">Your Products</h2>
+                                <a href="{% url 'add_product' %}" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                                    <i class="fas fa-plus mr-1"></i> Add New Product
+                                </a>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                                {% for product in seller.products.all %}
+                                    <div class="border rounded-lg p-4 hover:shadow-md transition duration-300">
+                                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-40 object-cover rounded-lg mb-3">
+                                        <h3 class="font-medium text-lg mb-1">{{ product.name }}</h3>
+                                        <p class="text-gray-600 font-bold">₹{{ product.price }}</p>
+                                        <p class="text-sm text-gray-500">Stock: {{ product.stock }}</p>
+                                    </div>
+                                {% empty %}
+                                    <p class="col-span-3 text-gray-600 text-center py-8">No products listed yet.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-8">
+                    {% if user_profile.user_type == 'customer' %}
+                        <!-- Loyalty Points -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Loyalty Points</h2>
+                            <div class="text-5xl font-bold text-blue-500">{{ customer.loyalty_points }}</div>
+                            <p class="text-gray-600 mt-2">Points earned</p>
+                            <div class="mt-4 bg-blue-50 rounded-lg p-3">
+                                <p class="text-sm text-blue-800">You're just 100 points away from your next reward!</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Recent Orders -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Recent Orders</h2>
+                        {% for order in user.order_set.all|slice:":5" %}
+                            <div class="border-b last:border-b-0 py-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-lg">Order #{{ order.id }}</span>
+                                    <span class="text-sm px-3 py-1 rounded-full {% if order.status == 'delivered' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                        {{ order.status|title }}
+                                    </span>
+                                </div>
+                                <p class="text-gray-600 text-sm">{{ order.created_at|date:"M d, Y" }}</p>
+                                <p class="text-gray-800 mt-1 font-bold">₹{{ order.total_amount }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="text-gray-600 text-center py-4">No orders yet.</p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Your Reviews -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Your Reviews</h2>
+                        {% for review in user.review_set.all|slice:":3" %}
+                            <div class="border-b last:border-b-0 py-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="font-medium text-lg">{{ review.product.name }}</h3>
+                                        <div class="text-yellow-400 mt-1">
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star"></i>
+                                                {% else %}
+                                                    <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">{{ review.created_at|date:"M d" }}</span>
+                                </div>
+                                <p class="text-gray-600 mt-2">{{ review.comment }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="text-gray-600 text-center py-4">No reviews yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
